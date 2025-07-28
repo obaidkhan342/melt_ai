@@ -1,6 +1,5 @@
 // ignore_for_file: unused_import, await_only_futures
 
-
 import 'dart:async';
 import 'dart:core';
 import 'dart:developer';
@@ -51,7 +50,7 @@ class ChatProvider extends ChangeNotifier {
 
   // itialize text model
   GenerativeModel? _textModel;
-  
+
   // initialize vision model
   GenerativeModel? _visionModel;
 
@@ -102,7 +101,6 @@ class ChatProvider extends ChangeNotifier {
 
   // load the messages from db
   Future<List<Message>> loadMessageFromDB({required String chatId}) async {
-    
     await Hive.openBox('${Constants.chatMessagesBox}$chatId');
 
     final messageBox = Hive.box('${Constants.chatMessagesBox}$chatId');
@@ -133,44 +131,48 @@ class ChatProvider extends ChangeNotifier {
   // function to set the model based on bool - isTextOnly
   Future<void> setModel({required bool isTextOnly}) async {
     if (isTextOnly) {
-      _model = _textModel ??
+      _model =
+          _textModel ??
           GenerativeModel(
-              model: setCurrentModel(newModel: 'gemini-1.5-pro'),
-              // model: setCurrentModel(newModel: 'gemini-2.5-pro-exp-03-25'),
-              // apiKey: getApiKey(),
-              apiKey: getApiKey(),
-              generationConfig: GenerationConfig(
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 4096,
-              ),
-              safetySettings: [
-                SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
-                SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
-              ]);
+            model: setCurrentModel(newModel: 'gemini-1.5-pro'),
+            // model: setCurrentModel(newModel: 'gemini-2.5-pro-exp-03-25'),
+            // apiKey: getApiKey(),
+            apiKey: getApiKey(),
+            generationConfig: GenerationConfig(
+              temperature: 0.4,
+              topK: 32,
+              topP: 1,
+              maxOutputTokens: 4096,
+            ),
+            safetySettings: [
+              SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
+              SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
+            ],
+          );
     } else {
-      _model = _visionModel ??
+      _model =
+          _visionModel ??
           GenerativeModel(
-              model: setCurrentModel(newModel: 'gemini-1.5-flash'),
-              // model: setCurrentModel(newModel: 'gemini-2.5-flash'),
-              // apiKey: getApiKey(),
-              apiKey: getApiKey(),
-              generationConfig: GenerationConfig(
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 4096,
-              ),
-              safetySettings: [
-                SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
-                SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
-              ]);
+            model: setCurrentModel(newModel: 'gemini-1.5-flash'),
+            // model: setCurrentModel(newModel: 'gemini-2.5-flash'),
+            // apiKey: getApiKey(),
+            apiKey: getApiKey(),
+            generationConfig: GenerationConfig(
+              temperature: 0.4,
+              topK: 32,
+              topP: 1,
+              maxOutputTokens: 4096,
+            ),
+            safetySettings: [
+              SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
+              SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
+            ],
+          );
     }
     notifyListeners();
   }
 
-// set current page index
+  // set current page index
   void setCurrentIndex({required int newIndex}) {
     _currentIndex = newIndex;
     notifyListeners();
@@ -221,10 +223,11 @@ class ChatProvider extends ChangeNotifier {
   }
 
   // prepare chat room
-  Future<void> prepareChatRoom(
-      {required bool isNewChat,
-      required String chatID,
-      bool isMcqs = false}) async {
+  Future<void> prepareChatRoom({
+    required bool isNewChat,
+    required String chatID,
+    bool isMcqs = false,
+  }) async {
     if (!isNewChat) {
       final chatHistory = await loadMessageFromDB(chatId: chatID);
       isMcqs ? _inMcqsMessages.clear() : _inChatMessages.clear();
@@ -320,124 +323,119 @@ class ChatProvider extends ChangeNotifier {
   //   }
   // }
 
-
-Future<void> sentMessage({
-  required String message,
-  required bool isTextOnly,
-  bool saveItNot = true,
-  bool isMcqs = false,
-}) async {
-  setLoading(value: true);
-  try {
-    String chatId = getChatId();
-    List<Content> history = await getHistory(chatId: chatId);
-    final messagesBox =
-        await Hive.openBox('${Constants.chatMessagesBox}$chatId');
-    final userMessageId = messagesBox.keys.length;
-    final assistantMessageId = userMessageId + 1;
-
-    // Get base64 images if not text only
-    List<String> imagesUrls = await getImagesUrls(isTextOnly: isTextOnly);
-    List<String> base64Images = [];
-    for (var path in imagesUrls) {
-      final bytes = await File(path).readAsBytes();
-      base64Images.add(base64Encode(bytes));
-    }
-
-    final userMessage = Message(
-      messageId: userMessageId.toString(),
-      chatId: chatId,
-      role: Role.user,
-      message: StringBuffer(message),
-      imageUrls: imagesUrls,
-      timeSent: DateTime.now(),
-    );
-
-    if (isMcqs) {
-      _inMcqsMessages.add(userMessage);
-    } else {
-      _inChatMessages.add(userMessage);
-    }
-
-    if (currentChatId.isEmpty) {
-      setCurrentChatId(newChatId: chatId);
-    }
-
-    notifyListeners();
-
-    await sendMessageAndWaitForResponse(
-      message: message,
-      chatId: chatId,
-      isTextOnly: isTextOnly,
-      history: history,
-      userMessage: userMessage,
-      modelMessageId: assistantMessageId.toString(),
-      messagesBox: messagesBox,
-      isSaveIt: saveItNot,
-      isMcqs: isMcqs,
-      base64Images: base64Images,
-    );
-  } catch (e) {
-    log('Error in sentMessage: $e');
-  } finally {
-    setLoading(value: false);
-  }
-}
-
-Future<void> sendMessageAndWaitForResponse({
-  required String message,
-  required String chatId,
-  required bool isTextOnly,
-  required List<Content> history,
-  required Message userMessage,
-  required String modelMessageId,
-  required Box messagesBox,
-  bool isSaveIt = true,
-  bool isMcqs = false,
-  Box? mcqsBox,
-  List<String> base64Images = const [],
-}) async {
-  try {
-    // Generate response using free API with image support
-    final responseText = await APIS.generateTextFromFreeAPI(
-      prompt: message,
-      base64Images: base64Images,
-    );
-
-    final assistantMessage = userMessage.copyWith(
-      messageId: modelMessageId,
-      role: Role.assistant,
-      message: StringBuffer(responseText),
-      timeSent: DateTime.now(),
-    );
-
-    if (isMcqs) {
-      _inMcqsMessages.add(assistantMessage);
-    } else {
-      _inChatMessages.add(assistantMessage);
-    }
-
-    notifyListeners();
-
-    if (isSaveIt) {
-      await saveMessageToDB(
-        chatID: chatId,
-        userMessage: userMessage,
-        assistantMessage: assistantMessage,
-        messagesBox: messagesBox,
-        isMcqs: isMcqs,
+  Future<void> sentMessage({
+    required String message,
+    required bool isTextOnly,
+    bool saveItNot = true,
+    bool isMcqs = false,
+  }) async {
+    setLoading(value: true);
+    try {
+      String chatId = getChatId();
+      List<Content> history = await getHistory(chatId: chatId);
+      final messagesBox = await Hive.openBox(
+        '${Constants.chatMessagesBox}$chatId',
       );
+      final userMessageId = messagesBox.keys.length;
+      final assistantMessageId = userMessageId + 1;
+
+      // Get base64 images if not text only
+      List<String> imagesUrls = await getImagesUrls(isTextOnly: isTextOnly);
+      List<String> base64Images = [];
+      for (var path in imagesUrls) {
+        final bytes = await File(path).readAsBytes();
+        base64Images.add(base64Encode(bytes));
+      }
+
+      final userMessage = Message(
+        messageId: userMessageId.toString(),
+        chatId: chatId,
+        role: Role.user,
+        message: StringBuffer(message),
+        imageUrls: imagesUrls,
+        timeSent: DateTime.now(),
+      );
+
+      if (isMcqs) {
+        _inMcqsMessages.add(userMessage);
+      } else {
+        _inChatMessages.add(userMessage);
+      }
+
+      if (currentChatId.isEmpty) {
+        setCurrentChatId(newChatId: chatId);
+      }
+
+      notifyListeners();
+
+      await sendMessageAndWaitForResponse(
+        message: message,
+        chatId: chatId,
+        isTextOnly: isTextOnly,
+        history: history,
+        userMessage: userMessage,
+        modelMessageId: assistantMessageId.toString(),
+        messagesBox: messagesBox,
+        isSaveIt: saveItNot,
+        isMcqs: isMcqs,
+        base64Images: base64Images,
+      );
+    } catch (e) {
+      log('Error in sentMessage: $e');
+    } finally {
+      setLoading(value: false);
     }
-  } catch (e, stackTrace) {
-    log('Error in sendMessageAndWaitForResponse: $e');
-    log('Stack trace: $stackTrace');
   }
-}
 
+  Future<void> sendMessageAndWaitForResponse({
+    required String message,
+    required String chatId,
+    required bool isTextOnly,
+    required List<Content> history,
+    required Message userMessage,
+    required String modelMessageId,
+    required Box messagesBox,
+    bool isSaveIt = true,
+    bool isMcqs = false,
+    Box? mcqsBox,
+    List<String> base64Images = const [],
+  }) async {
+    try {
+      // Generate response using free API with image support
+      final responseText = await APIS.generateTextFromFreeAPI(
+        prompt: message,
+        base64Images: base64Images,
+      );
 
+      final assistantMessage = userMessage.copyWith(
+        messageId: modelMessageId,
+        role: Role.assistant,
+        message: StringBuffer(responseText),
+        timeSent: DateTime.now(),
+      );
 
+      if (isMcqs) {
+        _inMcqsMessages.add(assistantMessage);
+      } else {
+        _inChatMessages.add(assistantMessage);
+      }
 
+      notifyListeners();
 
+      if (isSaveIt) {
+        await saveMessageToDB(
+          chatID: chatId,
+          userMessage: userMessage,
+          assistantMessage: assistantMessage,
+          messagesBox: messagesBox,
+          isMcqs: isMcqs,
+        );
+      }
+    } catch (e, stackTrace) {
+      log('Error in sendMessageAndWaitForResponse: $e');
+      log('Stack trace: $stackTrace');
+    }
+  }
 
   // Future<void> sendMessageAndWaitForResponse({
   //   required String message,
@@ -533,11 +531,12 @@ Future<void> sendMessageAndWaitForResponse({
     if (isMcqs == true) {
       final mcqsHistoryBox = Boxes.getMcqsHistory();
       final chatHistory = McqsHistory(
-          chatId: chatID,
-          prompt: userMessage.message.toString(),
-          response: assistantMessage.message.toString(),
-          imagesUrls: userMessage.imageUrls,
-          timesStamp: DateTime.now(),);
+        chatId: chatID,
+        prompt: userMessage.message.toString(),
+        response: assistantMessage.message.toString(),
+        imagesUrls: userMessage.imageUrls,
+        timesStamp: DateTime.now(),
+      );
       await mcqsHistoryBox.put(chatID, chatHistory);
     } else {
       final chatHistoryBox = Boxes.getChatHistory();
@@ -577,9 +576,7 @@ Future<void> sendMessageAndWaitForResponse({
   }
 
   // get y=the imagesUrls
-  List<String> getImagesUrls({
-    required bool isTextOnly,
-  }) {
+  List<String> getImagesUrls({required bool isTextOnly}) {
     List<String> imagesUrls = [];
     if (!isTextOnly && imageFileList != null) {
       for (var image in imageFileList!) {

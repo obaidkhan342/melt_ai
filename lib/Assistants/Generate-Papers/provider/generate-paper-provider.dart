@@ -149,7 +149,7 @@ class GeneratePaper extends ChangeNotifier {
   //   isLoading = true;
   //   notifyListeners();
 
-  //   const apiKey = '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';
+  //   const apiKey = 'c12598363';
   //   const url = 'https://openrouter.ai/api/v1/chat/completions';
 
   //   final headers = {
@@ -268,7 +268,7 @@ class GeneratePaper extends ChangeNotifier {
 //           ? GenerativeModel(
 //               model: 'gemini-1.5-pro',
 //               // model : 'gemini-pro',
-//               apiKey: 'AIzaSyCujTTiOgfypSB3eGCUViont0LZngYHYag',
+//               apiKey: '',
 //               generationConfig: GenerationConfig(
 //                 temperature: 0.4,
 //                 topK: 32,
@@ -282,7 +282,7 @@ class GeneratePaper extends ChangeNotifier {
 //             )
 //           : GenerativeModel(
 //               model: 'gemini-1.5-flash',
-//               apiKey: 'AIzaSyCujTTiOgfypSB3eGCUViont0LZngYHYag',
+//               apiKey: '',
 //               generationConfig: GenerationConfig(
 //                 temperature: 0.4,
 //                 topK: 32,

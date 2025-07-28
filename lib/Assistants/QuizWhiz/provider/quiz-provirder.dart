@@ -135,7 +135,7 @@ class QuizServices extends ChangeNotifier {
   //     final model = isTextOnly
   //         ? GenerativeModel(
   //             model: 'gemini-1.5-pro',
-  //             apiKey: 'AIzaSyCujTTiOgfypSB3eGCUViont0LZngYHYag',
+  //             apiKey: '',
   //             generationConfig: GenerationConfig(
   //               temperature: 0.4,
   //               topK: 32,
@@ -149,7 +149,7 @@ class QuizServices extends ChangeNotifier {
   //           )
   //         : GenerativeModel(
   //             model: 'gemini-1.5-flash',
-  //             apiKey: 'AIzaSyCujTTiOgfypSB3eGCUViont0LZngYHYag',
+  //             apiKey: '',
   //             generationConfig: GenerationConfig(
   //               temperature: 0.4,
   //               topK: 32,
